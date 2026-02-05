@@ -3,6 +3,7 @@ using System.Web.Http.Dependencies;
 using System;
 using WebApplication1.Repositories;
 using WebApplication1.Services;
+using WebApplication1.Security;
 
 namespace WebApplication1.App_Start
 {
@@ -23,6 +24,14 @@ namespace WebApplication1.App_Start
 
             if (serviceType == typeof(Controllers.ProdutosApiController))
                 return new Controllers.ProdutosApiController(new ProdutoService(new ProdutoRepository()));
+
+            // Registrar IAuthenticationService
+            if (serviceType == typeof(IAuthenticationService))
+                return new JwtTokenProvider(new JwtSettings());
+
+            // Registrar AuthController
+            if (serviceType == typeof(Controllers.AuthController))
+                return new Controllers.AuthController(new JwtTokenProvider(new JwtSettings()));
 
             return null;
         }

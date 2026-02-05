@@ -1,4 +1,4 @@
-using System;
+Ôªøusing System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -16,14 +16,17 @@ namespace WebApplication1.Controllers
     /// API de Produtos - Richardson Maturity Model Level 3 (HATEOAS)
     /// </summary>
     /// <remarks>
-    /// SEGURAN«A: Esta API requer HTTPS obrigatÛrio
+    /// SEGURAN√áA: Esta API requer HTTPS obrigat√≥rio
     /// - Filtro Global: RequireHttpsAttribute
     /// - Filtro Controller: RequireHttpsAttribute
     /// - HSTS: Strict-Transport-Security header
+    /// - Autentica√ß√£o: JWT Bearer Token
+    /// - Autoriza√ß√£o: Role-based (USER, ADMIN)
     /// </remarks>
-    [RequireHttps] // ? CAMADA 2: ExplÌcito no controller (documentaÁ„o + seguranÁa)
+    [RequireHttps]
     [RoutePrefix("api/produtos")]
     [LogAction]
+    [JwtAuthorizeRoleAttribute("USER", "ADMIN")] // Todos precisam estar logado: USER ou ADMIN
     public class ProdutosApiController : ApiController
     {
         private readonly IProdutoService _produtoService;
@@ -34,12 +37,13 @@ namespace WebApplication1.Controllers
         }
 
         /// <summary>
-        /// ObtÈm lista paginada de produtos com HATEOAS
+        /// Obt√©m lista paginada de produtos com HATEOAS
+        /// Acesso: USER ‚úÖ | ADMIN ‚úÖ
         /// </summary>
-        /// <param name="pageNumber">N˙mero da p·gina (padr„o: 1)</param>
-        /// <param name="pageSize">Tamanho da p·gina (padr„o: 10, m·x: 100)</param>
-        /// <param name="search">Termo de busca para filtrar por nome ou descriÁ„o</param>
-        /// <param name="orderBy">Campo de ordenaÁ„o: nome, nome_desc, preco, preco_desc</param>
+        /// <param name="pageNumber">N√∫mero da p√°gina (padr√£o: 1)</param>
+        /// <param name="pageSize">Tamanho da p√°gina (padr√£o: 10, m√°x: 100)</param>
+        /// <param name="search">Termo de busca para filtrar por nome ou descri√ß√£o</param>
+        /// <param name="orderBy">Campo de ordena√ß√£o: nome, nome_desc, preco, preco_desc</param>
         [HttpGet]
         [Route("", Name = "GetAllProdutos")]
         public async Task<IHttpActionResult> GetAll(
@@ -77,7 +81,8 @@ namespace WebApplication1.Controllers
         }
 
         /// <summary>
-        /// ObtÈm um produto especÌfico por ID com HATEOAS
+        /// Obt√©m um produto espec√≠fico por ID com HATEOAS
+        /// Acesso: USER ‚úÖ | ADMIN ‚úÖ
         /// </summary>
         [HttpGet]
         [Route("{id:int}", Name = "GetProdutoById")]
@@ -106,10 +111,12 @@ namespace WebApplication1.Controllers
 
         /// <summary>
         /// Cria um novo produto
+        /// Acesso: USER ‚ùå | ADMIN ‚úÖ
         /// </summary>
         [HttpPost]
         [Route("", Name = "CreateProduto")]
         [ValidateModel]
+        [JwtAuthorizeRoleAttribute("ADMIN")] // Sobrescreve: apenas ADMIN
         public async Task<IHttpActionResult> Create([FromBody] ProdutoCreateDto produtoDto)
         {
             try
@@ -134,10 +141,12 @@ namespace WebApplication1.Controllers
 
         /// <summary>
         /// Atualiza um produto existente
+        /// Acesso: USER ‚ùå | ADMIN ‚úÖ
         /// </summary>
         [HttpPut]
         [Route("{id:int}", Name = "UpdateProduto")]
         [ValidateModel]
+        [JwtAuthorizeRoleAttribute("ADMIN")] // Sobrescreve: apenas ADMIN
         public async Task<IHttpActionResult> Update(int id, [FromBody] ProdutoUpdateDto produtoDto)
         {
             try
@@ -166,9 +175,11 @@ namespace WebApplication1.Controllers
 
         /// <summary>
         /// Remove um produto
+        /// Acesso: USER ‚ùå | ADMIN ‚úÖ
         /// </summary>
         [HttpDelete]
         [Route("{id:int}", Name = "DeleteProduto")]
+        [JwtAuthorizeRoleAttribute("ADMIN")] // Sobrescreve: apenas ADMIN
         public async Task<IHttpActionResult> Delete(int id)
         {
             try
@@ -193,6 +204,7 @@ namespace WebApplication1.Controllers
 
         /// <summary>
         /// Verifica se um produto existe (HEAD)
+        /// Acesso: USER ‚úÖ | ADMIN ‚úÖ
         /// </summary>
         [HttpHead]
         [Route("{id:int}", Name = "HeadProduto")]
@@ -210,7 +222,8 @@ namespace WebApplication1.Controllers
         }
 
         /// <summary>
-        /// Retorna os mÈtodos HTTP permitidos (OPTIONS)
+        /// Retorna os m√©todos HTTP permitidos (OPTIONS)
+        /// Acesso: USER ‚úÖ | ADMIN ‚úÖ
         /// </summary>
         [HttpOptions]
         [Route("")]
@@ -220,7 +233,7 @@ namespace WebApplication1.Controllers
             var response = new
             {
                 Methods = new[] { "GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS" },
-                Description = "API de Produtos - NÌvel 3 Richardson Maturity Model",
+                Description = "API de Produtos - N√≠vel 3 Richardson Maturity Model",
                 Version = "1.0.0",
                 Security = new
                 {
