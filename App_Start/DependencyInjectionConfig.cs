@@ -27,11 +27,11 @@ namespace WebApplication1.App_Start
 
             // Registrar IAuthenticationService
             if (serviceType == typeof(IAuthenticationService))
-                return new JwtTokenProvider(new JwtSettings());
+                return new JwtTokenProvider(new JwtSettings(), new TokenRevocationService());
 
             // Registrar AuthController
             if (serviceType == typeof(Controllers.AuthController))
-                return new Controllers.AuthController(new JwtTokenProvider(new JwtSettings()));
+                return new Controllers.AuthController(new JwtTokenProvider(new JwtSettings(), new TokenRevocationService()));
 
             return null;
         }

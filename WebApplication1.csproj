@@ -227,6 +227,8 @@
     <Compile Include="Security\IAuthenticationService.cs" />
     <Compile Include="Security\JwtSettings.cs" />
     <Compile Include="Security\JwtTokenProvider.cs" />
+    <Compile Include="Security\ITokenRevocationService.cs" />
+    <Compile Include="Security\TokenRevocationService.cs" />
     <Compile Include="Services\IProdutoService.cs" />
     <Compile Include="Services\ProdutoService.cs" />
   </ItemGroup>
@@ -285,6 +287,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
+    <Folder Include="Data\" />
     <Folder Include="Views\Auth\" />
   </ItemGroup>
   <ItemGroup>

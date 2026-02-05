@@ -16,9 +16,23 @@ namespace WebApplication1.Controllers
 
         /// <summary>
         /// POST /api/auth/login
-        /// Recebe: { "usuario": "admin", "senha": "senha123" }
-        /// Retorna: { "token": "eyJhbGc...", "usuario": "admin", "expiresIn": 3600 }
+        /// Autentica o usuário e retorna Access Token + Refresh Token
         /// </summary>
+        /// <remarks>
+        /// Exemplo de requisição:
+        /// {
+        ///   "usuario": "admin",
+        ///   "senha": "senha123"
+        /// }
+        /// 
+        /// Exemplo de resposta:
+        /// {
+        ///   "accessToken": "eyJhbGc...",
+        ///   "refreshToken": "eyJhbGc...",
+        ///   "expiresIn": 900,
+        ///   "tokenType": "Bearer"
+        /// }
+        /// </remarks>
         [HttpPost]
         [Route("login")]
         [AllowAnonymous]
@@ -32,15 +46,107 @@ namespace WebApplication1.Controllers
             if (!_authService.ValidarCredenciais(request.Usuario, request.Senha))
                 return Unauthorized();
 
-            // 3. Gera o token JWT
-            var token = _authService.GerarToken(request.Usuario);
+            // 3. Gera os tokens
+            var accessToken = _authService.GerarToken(request.Usuario);
+            var refreshToken = _authService.GerarRefreshToken(request.Usuario);
 
-            // 4. Retorna o token
+            // 4. Retorna os tokens
             return Ok(new
             {
-                token = token,
-                usuario = request.Usuario,
-                expiresIn = 3600 // 1 hora em segundos
+                accessToken = accessToken,
+                refreshToken = refreshToken,
+                expiresIn = 900,  // 15 minutos em segundos
+                tokenType = "Bearer"
+            });
+        }
+
+        /// <summary>
+        /// POST /api/auth/refresh
+        /// Renova o Access Token usando um Refresh Token válido
+        /// </summary>
+        /// <remarks>
+        /// Exemplo de requisição:
+        /// {
+        ///   "refreshToken": "eyJhbGc..."
+        /// }
+        /// 
+        /// Exemplo de resposta:
+        /// {
+        ///   "accessToken": "eyJhbGc...",
+        ///   "refreshToken": "eyJhbGc...",
+        ///   "expiresIn": 900,
+        ///   "tokenType": "Bearer"
+        /// }
+        /// </remarks>
+        [HttpPost]
+        [Route("refresh")]
+        [AllowAnonymous]
+        public IHttpActionResult RefreshToken([FromBody] RefreshTokenRequest request)
+        {
+            // 1. Valida se recebeu o refresh token
+            if (request == null || string.IsNullOrWhiteSpace(request.RefreshToken))
+                return BadRequest("Refresh token é obrigatório");
+
+            // 2. Valida o refresh token
+            var usuario = _authService.ValidarRefreshToken(request.RefreshToken);
+            if (string.IsNullOrEmpty(usuario))
+                return Unauthorized();
+
+            // 3. Gera novos tokens
+            var novoAccessToken = _authService.GerarToken(usuario);
+            var novoRefreshToken = _authService.GerarRefreshToken(usuario);
+
+            // 4. Retorna os novos tokens
+            return Ok(new
+            {
+                accessToken = novoAccessToken,
+                refreshToken = novoRefreshToken,
+                expiresIn = 900,  // 15 minutos em segundos
+                tokenType = "Bearer"
+            });
+        }
+
+        /// <summary>
+        /// POST /api/auth/logout
+        /// Revoga o Access Token e o Refresh Token
+        /// Usuário não conseguirá mais usar esses tokens
+        /// </summary>
+        /// <remarks>
+        /// Exemplo de requisição:
+        /// {
+        ///   "accessToken": "eyJhbGc...",
+        ///   "refreshToken": "eyJhbGc..."
+        /// }
+        /// 
+        /// Exemplo de resposta:
+        /// {
+        ///   "message": "Logout realizado com sucesso",
+        ///   "success": true
+        /// }
+        /// </remarks>
+        [HttpPost]
+        [Route("logout")]
+        [AllowAnonymous]
+        public IHttpActionResult Logout([FromBody] LogoutRequest request)
+        {
+            // 1. Valida se recebeu os tokens
+            if (request == null || string.IsNullOrWhiteSpace(request.AccessToken))
+                return BadRequest("Access Token é obrigatório");
+
+            // 2. Revoga o Access Token
+            _authService.RevogarToken(request.AccessToken);
+
+            // 3. Revoga o Refresh Token (se fornecido)
+            if (!string.IsNullOrWhiteSpace(request.RefreshToken))
+            {
+                _authService.RevogarToken(request.RefreshToken);
+            }
+
+            // 4. Retorna sucesso
+            return Ok(new
+            {
+                message = "Logout realizado com sucesso",
+                success = true
             });
         }
     }
@@ -50,5 +156,16 @@ namespace WebApplication1.Controllers
     {
         public string Usuario { get; set; }
         public string Senha { get; set; }
+    }
+
+    public class RefreshTokenRequest
+    {
+        public string RefreshToken { get; set; }
+    }
+
+    public class LogoutRequest
+    {
+        public string AccessToken { get; set; }
+        public string RefreshToken { get; set; }
     }
 }
